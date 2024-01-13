@@ -43,7 +43,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE=../arm-linux-gnueabihf.toolchain.cmake \
 将安装目录install_arm下的lib和include移植到opencv_test中
 编译应用命令：
 arm-linux-gnueabihf-g++ main.cpp Panorama.cpp cropper.cpp -o main -I./ -I./include/ -L./lib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_imgcodecs -lopencv_imgproc -lopencv_xfeatures2d 
-执行./main arg1 arg2即可生成结果result.jpg图片,arg1表示几张图片，arg2表示算法阈值
+执行./main arg1 arg2 arg3即可生成结果result.jpg图片,arg1表示几张图片，arg2表示算法阈值，arg3表示摄像头是否是倒装拍照的，正向拍照图片顺序是从左到右，倒装拍照图片顺序是从右到左
 
 ------------------------------------------------------------------------------------
 
@@ -93,5 +93,6 @@ cmake -DCMAKE_TOOLCHAIN_FILE=../linux-gnueabihf.toolchain.cmake \
 export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH
 2.编译应用命令只需执行本目录下的makefile文件即可：make，清除中间文件使用make clean
 
-执行./main arg1 arg2即可生成结果result.jpg图片,arg1表示几张图片，arg2表示算法阈值
-本例程中用的是10张照片,用法./main 10 500
+执行./main arg1 arg2 arg3即可生成结果result.jpg图片,arg1表示几张图片，arg2表示算法阈值，arg3表示摄像头是否是倒装拍照的，正向拍照图片顺序是从左到右，倒装拍照图片顺序是从右到左
+本例程中用的是10张照片,用法./main 10 500 0		(其中第三个参数0，表示摄像头正向拍照，图像顺序是从左到右)
+例程中默认image中的图片是正向拍照(从左到右)，image_1是倒装拍照(从右到左)

@@ -16,7 +16,7 @@ class Cropper{
         Mat crop(const Mat& img);
         
         void crop(const Mat& src, Mat& dst, cv::Rect& dstBound);
-        
+        void RemoveBlackBorder(const cv::Mat &iplImg, cv::Mat &dstImg);
         
         inline void setStep(int kp){
             kstep = kp;

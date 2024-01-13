@@ -18,7 +18,7 @@ static int dynamic_threshold;
  * @para sourceImages 进行拼接的所有图片
  * @para panoImg 拼接结果图片
  *******************************************************/
-cv::Mat panorama(std::vector<cv::Mat> & sourceImages, unsigned nImgs)
+cv::Mat panorama(std::vector<cv::Mat> & sourceImages, unsigned nImgs, unsigned screen_flip)
 {
 	cv::Mat panoImg;
 
@@ -28,9 +28,13 @@ cv::Mat panorama(std::vector<cv::Mat> & sourceImages, unsigned nImgs)
 		return panoImg;
 	}
 
-
 	std::vector<cv::Mat> Hs(nImgs);
-	Hs.front() = cv::Mat::eye(3, 3, CV_32FC1);
+	cv::Mat eyeMatrix = cv::Mat::eye(3, 3, CV_32FC1);
+	if(screen_flip){
+		eyeMatrix.at<float>(0,2) = (nImgs-1) * Img_Width;
+	}
+	
+	Hs.front() = eyeMatrix;
 	cv::Mat tempImg = cv::Mat(Img_Height, Img_Width*nImgs, CV_32FC4);
 
 	cout << "Loading image...:1" << endl;
@@ -46,7 +50,7 @@ cv::Mat panorama(std::vector<cv::Mat> & sourceImages, unsigned nImgs)
 	cv::imwrite("./image/test_" + std::to_string(0+1) + ".jpg", tempImg);
 	cv::Mat last_img = current_img;
 	front_img = current_img;
-
+	
 	for (unsigned i = 1; i < nImgs; i++)
 	{
 		cout << "Loading image...:" << i+1 << endl;
@@ -62,20 +66,43 @@ loop:
 		float diff_x = Hs[i].at<float>(0, 2);
 		float diff_y = Hs[i].at<float>(1, 2);
 
-		if(!(diff_x > 50 && diff_x < Img_Width) || !(diff_y > -10 && diff_y < 10)){
+		bool is_modifythreshold = false;
+		if(screen_flip){
+			if(!(diff_x < -50 && diff_x > (-Img_Width)) || !(diff_y > -10 && diff_y < 10)){
+				is_modifythreshold = true;
+			}
+		}else{
+			if(!(diff_x > 50 && diff_x < Img_Width) || !(diff_y > -10 && diff_y < 10)){
+				is_modifythreshold = true;
+			}
+		}
+
+		if(is_modifythreshold){
 			dynamic_threshold -= 25;
-			cout << "matrix error, Adjustment parameter dynamic_threshold:" << dynamic_threshold << endl;
+			if(diff_x == 0 && diff_y == 0){
+				dynamic_threshold = 0;
+				cout << "Fight recklessly image:" << i+1 << endl;
+			}else{
+				cout << "matrix error, Adjustment parameter dynamic_threshold:" << dynamic_threshold << endl;
+			}
+
 			if(dynamic_threshold>=25){
 				goto loop;
 			}else{
-				return panoImg;
+				if(i==1){return panoImg;}
+				Hs[i].at<float>(0,2) = Hs[i-1].at<float>(0,2) / (i-1);
+				Hs[i].at<float>(1,2) = Hs[i-1].at<float>(1,2) / (i-1);
+				cout << "Hs-"<< i << ":" << Hs[i] << endl;
+				Hs[i] = Hs[i - 1] * Hs[i];
+				blendImage(current_img, Hs[i], tempImg);
+				last_img = current_img;
 			}
 		}else{
 			Hs[i] = Hs[i - 1] * Hs[i];
 			blendImage(current_img, Hs[i], tempImg);
-			cv::imwrite("./image/test_" + std::to_string(i+1) + ".jpg", tempImg);
 			last_img = current_img;
 		}
+		cv::imwrite("./image/test_" + std::to_string(i+1) + ".jpg", tempImg);
 	}
 
 	back_img = current_img;
@@ -130,6 +157,9 @@ void matchFeatures(const cv::Mat & image1, const cv::Mat & image2,
 	// 检测特征点，然后计算特征向量
 	detectFeature(image1, keyPoint1, descriptors1);
 	detectFeature(image2, keyPoint2, descriptors2);
+	if(keyPoint2.size() == 0 || descriptors2.cols == 0){//图片(纯黑色图片)没有匹配点时，进行硬拼
+		return;
+	}
 
 	// 特征点匹配
 	cv::FlannBasedMatcher   matcher;
@@ -169,6 +199,10 @@ void alignImage(const cv::Mat & image1, const cv::Mat & image2, cv::Mat & H)
 	std::vector<cv::KeyPoint> keypoints1, keypoints2;
 	std::vector<cv::DMatch>   matches;
 	matchFeatures(image1, image2, keypoints1, keypoints2, matches);
+	if(matches.size() == 0){//图片(纯黑色图片)没有匹配点时，进行硬拼
+		H = cv::Mat::eye(3, 3, CV_32FC1);
+		return;
+	}
 
 	std::vector<cv::Point2f> pts1, pts2;
 	const unsigned nMatches = matches.size();
@@ -353,6 +387,7 @@ void blendImage(const cv::Mat & img, cv::Mat & H, cv::Mat & panoImg)
 	
 	// 计算目标图像边界
 	imageBoundry(img, H, minX, minY, maxX, maxY);
+	cout << "H:" << H << "minX:" << minX << "minY:" << minY << "maxX:" << maxX << "maxY:" << maxY << endl;
 	
 	cv::Mat invH = H.inv();
 

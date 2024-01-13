@@ -4,7 +4,209 @@ using namespace std;
 using namespace cv;
 
 /*******************************************************
- * Description: 去掉图片边缘的黑色部分，并映射成原图大熊啊
+ * Description: 方式一：消除图片四周的黑色边框  
+ *
+ * @param iplImg 输入图片
+ * @param dstImg 输出图片
+ *******************************************************/
+void Cropper::RemoveBlackBorder(const cv::Mat &iplImg, cv::Mat &dstImg)
+{
+	int width = iplImg.size().width;
+	int height = iplImg.size().height;
+	int a = 0, b = 0, c = 0, d = 0;
+	int i = 0, j = 0;
+ 
+	if (iplImg.channels() == 1)	//灰度图片
+	{
+		//消除黑色边框：上
+		for (j = 0; j<height; j++)
+		{
+			bool flag = false;
+			for (i = 0; i<width; i++)
+			{
+				if (iplImg.at<uchar>(j, i)<30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					a = j;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+		//消除黑色边框：下
+		for (j = height - 1; j >= a; j--)
+		{
+			bool flag = false;
+			for (i = 0; i<width; i++)
+			{
+				if (iplImg.at<uchar>(j, i)<30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					b = j;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+		//消除黑色边框：左
+		for (i = 0; i<width; i++)
+		{
+			bool flag = false;
+			for (j = 0; j<height; j++)
+			{
+				if (iplImg.at<uchar>(j, i)<30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					c = i;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+		//消除黑色边框：右
+		for (i = width - 1; i >= c; i--)
+		{
+			bool flag = false;
+			for (j = 0; j<height; j++)
+			{
+				if (iplImg.at<uchar>(j, i)<30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					d = i;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+	}
+	else if (iplImg.channels() == 3)	//彩色图片
+	{
+		//消除黑色边框：上
+		for (j = 0; j < height; j++)
+		{
+			bool flag = false;
+			for (i = 0; i < width; i++)
+			{
+				int tmpb, tmpg, tmpr;
+				tmpb = iplImg.at<cv::Vec3b>(j, i).val[0];
+				tmpg = iplImg.at<cv::Vec3b>(j, i).val[1];
+				tmpr = iplImg.at<cv::Vec3b>(j, i).val[2];
+				if (tmpb <= 30 && tmpg <= 30 && tmpr <= 30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					a = j;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+		// printf("上 a: %d\n", a);
+ 
+		//消除黑色边框：下
+		for (j = height - 1; j >= a; j--)
+		{
+			bool flag = false;
+			for (i = 0; i < width; i++)
+			{
+				int tmpb, tmpg, tmpr;
+				tmpb = iplImg.at<cv::Vec3b>(j, i).val[0];
+				tmpg = iplImg.at<cv::Vec3b>(j, i).val[1];
+				tmpr = iplImg.at<cv::Vec3b>(j, i).val[2];
+				if (tmpb <= 30 && tmpg <= 30 && tmpr <= 30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					b = j;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+		// printf("下 b: %d\n", b);
+ 
+		//消除黑色边框：左
+		for (i = 0; i < width; i++)
+		{
+			bool flag = false;
+			for (j = 0; j < height; j++)
+			{
+				int tmpb, tmpg, tmpr;
+				tmpb = iplImg.at<cv::Vec3b>(j, i).val[0];
+				tmpg = iplImg.at<cv::Vec3b>(j, i).val[1];
+				tmpr = iplImg.at<cv::Vec3b>(j, i).val[2];
+				if (tmpb <= 30 && tmpg <= 30 && tmpr <= 30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					c = i;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+		// printf("左 c: %d\n", c);
+ 
+		//消除黑色边框：右
+		for (i = width - 1; i >= c; i--)
+		{
+			bool flag = false;
+			for (j = 0; j < height; j++)
+			{
+				int tmpb, tmpg, tmpr;
+				tmpb = iplImg.at<cv::Vec3b>(j, i).val[0];
+				tmpg = iplImg.at<cv::Vec3b>(j, i).val[1];
+				tmpr = iplImg.at<cv::Vec3b>(j, i).val[2];
+				if (tmpb <= 30 && tmpg <= 30 && tmpr <= 30)
+				{
+					;
+				}
+				else
+				{
+					flag = true;
+					d = i;
+					break;
+				}
+			}
+			if (flag) break;
+		}
+		// printf("右 d: %d\n", d);
+	}
+ 
+	//复制图像
+	int w = d - c + 1, h = b - a + 1;
+	dstImg = Mat(iplImg, Rect(c, a, w, h));
+ 
+	return;
+}
+
+/*******************************************************
+ * Description: 方式一：去掉图片边缘的黑色部分，并映射成原图大熊啊
  *
  * @para img 进行边缘处理的图片
  *******************************************************/

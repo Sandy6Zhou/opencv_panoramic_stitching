@@ -11,7 +11,7 @@
 #include <numeric>
 #include <vector>
 
-cv::Mat panorama(std::vector<cv::Mat> & vecImgs, unsigned nImgs);
+cv::Mat panorama(std::vector<cv::Mat> & vecImgs, unsigned nImgs, unsigned screen_flip);
 
 void detectFeature(const cv::Mat & image,
 		std::vector<cv::KeyPoint> & keypoints,
