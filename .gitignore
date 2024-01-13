@@ -1,2 +1,5 @@
 /.vscode
 /Panoramic_splicing_time.txt
+/image*/test*.jpg
+/image*/result.jpg
+/main
