@@ -33,12 +33,12 @@ cv::Mat panorama(std::vector<cv::Mat> & sourceImages, unsigned nImgs, unsigned s
 	if(screen_flip){
 		eyeMatrix.at<float>(0,2) = (nImgs-1) * Img_Width;
 	}
-	
+
 	Hs.front() = eyeMatrix;
 	cv::Mat tempImg = cv::Mat(Img_Height, Img_Width*nImgs, CV_32FC4);
 
 	cout << "Loading image...:1" << endl;
-	
+
 	cv::Mat front_img, back_img;
 	cv::Mat current_img = cv::imread("./image/ptz_panorama_1.jpg").colRange(Cols_Cut, Cols_Cut+Img_Width).clone();
 	if(current_img.empty()){
@@ -50,7 +50,7 @@ cv::Mat panorama(std::vector<cv::Mat> & sourceImages, unsigned nImgs, unsigned s
 	cv::imwrite("./image/test_" + std::to_string(0+1) + ".jpg", tempImg);
 	cv::Mat last_img = current_img;
 	front_img = current_img;
-	
+
 	for (unsigned i = 1; i < nImgs; i++)
 	{
 		cout << "Loading image...:" << i+1 << endl;
@@ -90,8 +90,13 @@ loop:
 				goto loop;
 			}else{
 				if(i==1){return panoImg;}
-				Hs[i].at<float>(0,2) = Hs[i-1].at<float>(0,2) / (i-1);
+				if(screen_flip){
+					Hs[i].at<float>(0,2) = (Hs[i-1].at<float>(0,2) - ((nImgs-1) * Img_Width)) / (i-1);
+				}else{
+					Hs[i].at<float>(0,2) = Hs[i-1].at<float>(0,2) / (i-1);
+				}
 				Hs[i].at<float>(1,2) = Hs[i-1].at<float>(1,2) / (i-1);
+
 				cout << "Hs-"<< i << ":" << Hs[i] << endl;
 				Hs[i] = Hs[i - 1] * Hs[i];
 				blendImage(current_img, Hs[i], tempImg);
@@ -229,7 +234,7 @@ void blendPanorama(const std::vector<cv::Mat> & sourceImages,
 	std::vector<cv::Mat> & H, cv::Mat & panoImg)
 {
 	cv::Mat tempImg;
-	
+
 	// 计算融合后的图像大小
 	computeSize(sourceImages, H, tempImg);
 
@@ -250,13 +255,13 @@ void blendPanorama(const std::vector<cv::Mat> & sourceImages,
  * @para H 变换矩阵
  * @para pts2, pts1 变换匹配点
  *******************************************************/
-void computeHomography(cv::Mat & H, 
+void computeHomography(cv::Mat & H,
 	const std::vector<cv::Point2f> & pts2,
 	const std::vector<cv::Point2f> & pts1)
 {
 	const float thresh = 4.0f;
 
-	unsigned count = 0;	
+	unsigned count = 0;
 	std::vector<unsigned> inliers;
 
 	unsigned n = pts1.size();
@@ -325,13 +330,13 @@ void computeSize(const std::vector<cv::Mat> &sourceImages,
 {
 	const unsigned nImgs = sourceImages.size();
 	for (unsigned i = 1; i < nImgs; i++)
-	{		
+	{
 		Hs[i] = Hs[i - 1] * Hs[i];
 	}
 
 	float minX = FLT_MAX, maxX = 0.0f;
 	float minY = FLT_MAX, maxY = 0.0f;
-	
+
 	// 计算目标图像边界
 	for (unsigned i = 0; i < nImgs; i++)
 	{
@@ -384,11 +389,11 @@ void blendImage(const cv::Mat & img, cv::Mat & H, cv::Mat & panoImg)
 	const float blendWidth = 100.0;
 
 	int minX, minY, maxX, maxY;
-	
+
 	// 计算目标图像边界
 	imageBoundry(img, H, minX, minY, maxX, maxY);
 	cout << "H:" << H << "minX:" << minX << "minY:" << minY << "maxX:" << maxX << "maxY:" << maxY << endl;
-	
+
 	cv::Mat invH = H.inv();
 
 	const int h = panoImg.rows;
@@ -452,7 +457,7 @@ void imageBoundry(const cv::Mat & img, const cv::Mat & H,
 	const int w = img.cols;
 
 	std::vector<cv::Point2f> corners;
-	
+
 	// 图像四个角点
 	corners.push_back(cv::Point2f(0.0, 0.0));
 	corners.push_back(cv::Point2f(0.0, h - 1.0));
@@ -490,7 +495,7 @@ void computeColor(const cv::Mat & img,
 	int yf = (int)floor(y);
 	int xc = xf + 1;
 	int yc = yf + 1;
-	
+
 	std::vector<float> wts;
 	wts.push_back(dist(x, y, xf, yf));
 	wts.push_back(dist(x, y, xc, yf));
@@ -550,7 +555,7 @@ void normalizeBlend(cv::Mat & tempImg, cv::Mat & panoImg)
 				color[0] = (uchar)val[0];
 				color[1] = (uchar)val[1];
 				color[2] = (uchar)val[2];
-			}			
+			}
 		}
 	}
 	tempImg.release();
@@ -571,12 +576,12 @@ void affineDeform(cv::Mat & panoImg,
 	pts.push_back(cv::Point2f(0.5f * img0.cols, 0.5f * img0.rows));
 	cv::perspectiveTransform(pts, pts, H0);
 	cv::Point2f pt_init = pts.front();
-	
+
 	pts.clear();
 	pts.push_back(cv::Point2f(0.5f * imgN.cols, 0.5f * imgN.rows));
 	cv::perspectiveTransform(pts, pts, HN);
 	cv::Point2f pt_final = pts.front();
-	
+
 	cv::Mat A = cv::Mat::eye(3, 3, CV_32FC1);
 	A.at<float>(1, 0) = -(pt_final.y - pt_init.y) / (pt_final.x - pt_init.x);
 	A.at<float>(1, 2) = -pt_init.x * A.at<float>(1, 0);
