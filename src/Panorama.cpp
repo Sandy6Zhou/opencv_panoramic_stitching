@@ -78,7 +78,16 @@ loop:
 		}
 
 		if(is_modifythreshold){
-			dynamic_threshold -= 25;
+			if(dynamic_threshold >= 350){
+				dynamic_threshold -= 75;
+			}else{
+				if(dynamic_threshold >= 275){
+					dynamic_threshold = 250;
+				}else{
+					dynamic_threshold -= 50;
+				}
+			}
+
 			if(diff_x == 0 && diff_y == 0){
 				dynamic_threshold = 0;
 				cout << "Fight recklessly image:" << i+1 << endl;
@@ -86,16 +95,28 @@ loop:
 				cout << "matrix error, Adjustment parameter dynamic_threshold:" << dynamic_threshold << endl;
 			}
 
-			if(dynamic_threshold>=25){
+			if(dynamic_threshold>=50){
 				goto loop;
 			}else{
-				if(i==1){return panoImg;}
 				if(screen_flip){
-					Hs[i].at<float>(0,2) = (Hs[i-1].at<float>(0,2) - ((nImgs-1) * Img_Width)) / (i-1);
+					if(i==1){//硬拼接
+						Hs[i].at<float>(0,2) = -125;
+					}else{
+						Hs[i].at<float>(0,2) = (Hs[i-1].at<float>(0,2) - ((nImgs-1) * Img_Width)) / (i-1);
+					}
 				}else{
-					Hs[i].at<float>(0,2) = Hs[i-1].at<float>(0,2) / (i-1);
+					if(i == 1){
+						Hs[i].at<float>(0,2) = 125;
+					}else{
+						Hs[i].at<float>(0,2) = Hs[i-1].at<float>(0,2) / (i-1);
+					}
 				}
-				Hs[i].at<float>(1,2) = Hs[i-1].at<float>(1,2) / (i-1);
+
+				if(i == 1){
+					Hs[i].at<float>(1,2) = 0;
+				}else{
+					Hs[i].at<float>(1,2) = Hs[i-1].at<float>(1,2) / (i-1);
+				}
 
 				cout << "Hs-"<< i << ":" << Hs[i] << endl;
 				Hs[i] = Hs[i - 1] * Hs[i];
